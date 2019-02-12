@@ -49,7 +49,7 @@ func main() {
 
 	fmt.Println(string(b1))
 
-    // hide specific field, eg: fields created and field
+    // hide specific field, eg: fields created and creatorIp
 	result, err := goson.HideFields(*wury, "created", "creatorIp")
 
 	if err != nil {
