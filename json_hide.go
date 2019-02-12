@@ -11,6 +11,25 @@ var errorsShouldBeStruct = errors.New("input should be struct")
 
 type fieldSet map[string]bool
 
+// HideFields will hide json field based on struct json field you choose
+// params
+// - input (struct only)
+// - fields json field that you will be hide
+func HideFields(input interface{}, fields ...string) (map[string]interface{}, error) {
+	typeInput := reflect.TypeOf(input)
+	valueInput := reflect.ValueOf(input)
+
+	// validate input
+	// if input is not struct return early errors
+	if typeInput.Kind() != reflect.Struct {
+		return nil, errorsShouldBeStruct
+	}
+
+	fs := genFieldSet(fields...)
+
+	return hideFields(typeInput, valueInput, fs), nil
+}
+
 func genFieldSet(fields ...string) fieldSet {
 	var fieldMap = make(fieldSet, len(fields))
 	for _, v := range fields {
@@ -19,35 +38,29 @@ func genFieldSet(fields ...string) fieldSet {
 	return fieldMap
 }
 
-// HideFields will hide json field based on struct json field you choose
-// params
-// - input (struct only)
-// - fields json field that you will be hide
-func HideFields(input interface{}, fields ...string) (map[string]interface{}, error) {
-	typeInput := reflect.TypeOf(input)
+func hideFields(t reflect.Type, v reflect.Value, fs fieldSet) map[string]interface{} {
+	output := make(map[string]interface{}, t.NumField())
 
-	// validate input
-	// if input is not struct return early errors
-	if typeInput.Kind() != reflect.Struct {
-		return nil, errorsShouldBeStruct
-	}
-
-	fieldSet := genFieldSet(fields...)
-
-	output := make(map[string]interface{}, typeInput.NumField())
-
-	valueInput := reflect.ValueOf(input)
-
-	for i := 0; i < typeInput.NumField(); i++ {
+	for i := 0; i < t.NumField(); i++ {
 		// field return each file on the struct
-		field := typeInput.Field(i)
+		field := v.Field(i)
+		fieldType := t.Field(i)
 
-		// get json Tag
-		// eg: Name `json:"name"` => result will be `name`
-		jsonField := field.Tag.Get("json")
-		if !fieldSet[jsonField] {
-			output[jsonField] = valueInput.Field(i).Interface()
+		if field.Kind() == reflect.Struct && fieldType.Anonymous {
+			nesteds := hideFields(reflect.TypeOf(field.Interface()), reflect.ValueOf(field.Interface()), fs)
+			for k, v := range nesteds {
+				output[k] = v
+			}
+		} else {
+			// get json Tag
+			// eg: Name `json:"name"` => result will be `name`
+			jsonField := fieldType.Tag.Get("json")
+			if !fs[jsonField] {
+				output[jsonField] = v.Field(i).Interface()
+			}
 		}
+
 	}
-	return output, nil
+
+	return output
 }
