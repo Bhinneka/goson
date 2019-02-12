@@ -91,3 +91,87 @@ func main() {
 	"birthDate": "2019-02-12T11:12:04.5998+07:00"
 }
 ```
+
+### Make Zero Omitempty
+
+```go
+// Child type
+type Child struct {
+	ChildA      string `json:"childA"`
+	ChildB      string `json:"childB,omitempty"`
+	ChildStruct struct {
+		A int `json:"A,omitempty"`
+		B int `json:"B"`
+	} `json:"childStruct"`
+}
+
+// Bhinnekaners type
+type Bhinnekaners struct {
+	Name       string `json:"name"`
+	Additional string `json:"additional,omitempty"`
+	AddStruct  struct {
+		Field1 string `json:"field1,omitempty"`
+		Field2 string `json:"field2"`
+	} `json:"addStruct"`
+	AddChildPtr *Child `json:"child,omitempty"`
+}
+
+example := Bhinnekaners{
+	Name:       "Agung DP",
+	Additional: "test lagi",
+	AddStruct: struct {
+		Field1 string `json:"field1,omitempty"`
+		Field2 string `json:"field2"`
+	}{
+		Field1: "Field 1",
+		Field2: "Field 2",
+	},
+	AddChildPtr: &Child{
+		ChildA: "Child A",
+		ChildB: "Child B",
+		ChildStruct: struct {
+			A int `json:"A,omitempty"`
+			B int `json:"B"`
+		}{
+			A: 453,
+			B: 567,
+		},
+	},
+}
+```
+
+<b>json marshal before make zero field omitempty in example variable:</b>
+```json
+{
+  "name": "Agung DP",
+  "additional": "testing",
+  "addStruct": {
+    "field1": "Field 1",
+    "field2": "Field 2"
+  },
+  "child": {
+    "childA": "Child A",
+    "childB": "Child B",
+    "childStruct": {
+      "A": 453,
+      "B": 567
+    }
+  }
+}
+```
+
+<b>json marshal after make zero field omitempty in example variable:</b>
+```json
+{
+  "name": "Agung DP",
+  "addStruct": {
+    "field2": "Field 2"
+  },
+  "child": {
+    "childA": "Child A",
+    "childStruct": {
+      "B": 567
+    }
+  }
+}
+```
