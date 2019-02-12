@@ -5,7 +5,7 @@ import (
 	"reflect"
 )
 
-// this utility will hide json response based on struct json field you choose
+// this utility will hide json response based on struct json field you choose to hide
 
 var errorsShouldBeStruct = errors.New("input should be struct")
 
