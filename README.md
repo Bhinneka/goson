@@ -1,5 +1,8 @@
 ### Go JSON utility library
 
+[![GoDoc](https://godoc.org/github.com/Bhinneka/goson?status.svg)](https://godoc.org/github.com/Bhinneka/goson)
+[![Go Report Card](https://goreportcard.com/badge/github.com/Bhinneka/goson)](https://goreportcard.com/report/github.com/Bhinneka/goson)
+
 #### Install
 ```shell
 $ go get github.com/Bhinneka/goson
