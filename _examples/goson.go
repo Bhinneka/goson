@@ -51,4 +51,7 @@ func main() {
 	}
 
 	fmt.Println(string(b2))
+	fmt.Println()
+
+	json.NewEncoder(os.Stdout).Encode(result)
 }
