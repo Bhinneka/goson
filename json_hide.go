@@ -46,7 +46,22 @@ func hideFields(t reflect.Type, v reflect.Value, fs fieldSet) map[string]interfa
 		field := v.Field(i)
 		fieldType := t.Field(i)
 
-		if field.Kind() == reflect.Struct && fieldType.Anonymous {
+		if field.Kind() == reflect.Interface && !v.IsNil() {
+			elm := field.Elem()
+			if elm.Kind() == reflect.Ptr && !elm.IsNil() && elm.Elem().Kind() == reflect.Ptr {
+				field = elm
+			}
+		}
+
+		// if nested field is a pointer,
+		// then extract it using .Elem()
+		if field.Kind() == reflect.Ptr {
+			field = field.Elem()
+		}
+
+		// fieldType.Tag.Get("json") return "", then it should be anonymous or embedded struct
+		if (field.Kind() == reflect.Struct) && (fieldType.Anonymous || fieldType.Tag.Get("json") == "") {
+
 			nesteds := hideFields(reflect.TypeOf(field.Interface()), reflect.ValueOf(field.Interface()), fs)
 			for k, v := range nesteds {
 				output[k] = v
