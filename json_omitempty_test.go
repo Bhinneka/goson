@@ -14,6 +14,11 @@ func TestMakeZeroOmitempty(t *testing.T) {
 			B int `json:"B"`
 		} `json:"childStruct"`
 	}
+	type arr struct {
+		Arr1 string `json:"arr1"`
+		Arr2 string `json:"arr2,omitempty"`
+	}
+
 	type obj struct {
 		Name       string `json:"name"`
 		Additional string `json:"additional,omitempty"`
@@ -21,7 +26,8 @@ func TestMakeZeroOmitempty(t *testing.T) {
 			Field1 string `json:"field1,omitempty"`
 			Field2 string `json:"field2"`
 		} `json:"addStruct"`
-		AddChildPtr *Child `json:"child,omitempty"`
+		AddChildPtr *Child `json:"child"`
+		Slice       []arr  `json:"slice"`
 	}
 
 	/*
@@ -40,7 +46,13 @@ func TestMakeZeroOmitempty(t *testing.T) {
 					"A": 453, // value in this field will removed because contains omitempty in json tag
 					"B": 567
 				}
-			}
+			},
+			"slice": [
+				{
+					"arr1": "Test field slice 1",
+					"arr2": "Test field slice 2 (value in this field will removed because contains omitempty in json tag)"
+				}
+			]
 		}
 
 		result after make zero field contains omitempty is:
@@ -54,7 +66,12 @@ func TestMakeZeroOmitempty(t *testing.T) {
 				"childStruct": {
 					"B": 567
 				}
-			}
+			},
+			"slice": [
+				{
+					"arr1": "Test field slice 1"
+				}
+			]
 		}
 	*/
 	objExample := obj{
@@ -78,6 +95,11 @@ func TestMakeZeroOmitempty(t *testing.T) {
 				B: 567,
 			},
 		},
+		Slice: []arr{arr{
+			Arr1: "Test field slice 1",
+			Arr2: "Test field slice 2 (value in this field will removed because contains omitempty in json tag)",
+		},
+		},
 	}
 
 	tests := []struct {
@@ -89,22 +111,22 @@ func TestMakeZeroOmitempty(t *testing.T) {
 		{
 			name:       "Testcase #1",
 			args:       &objExample,
-			wantResult: `{"name":"Test","addStruct":{"field2":"Field 2"},"child":{"childA":"Child A","childStruct":{"B":567}}}`,
+			wantResult: `{"name":"Test","addStruct":{"field2":"Field 2"},"child":{"childA":"Child A","childStruct":{"B":567}},"slice":[{"arr1":"Test field slice 1"}]}`,
 		},
 		{
 			name:       "Testcase #2, argument is slice",
 			args:       []*obj{&objExample},
-			wantResult: `[{"name":"Test","addStruct":{"field2":"Field 2"},"child":{"childA":"Child A","childStruct":{"B":567}}}]`,
+			wantResult: `[{"name":"Test","addStruct":{"field2":"Field 2"},"child":{"childA":"Child A","childStruct":{"B":567}},"slice":[{"arr1":"Test field slice 1"}]}]`,
 		},
 		{
 			name:       "Testcase #3, argument is map of slice",
 			args:       map[string][]*obj{"aa": []*obj{&objExample}},
-			wantResult: `{"aa":[{"name":"Test","addStruct":{"field2":"Field 2"},"child":{"childA":"Child A","childStruct":{"B":567}}}]}`,
+			wantResult: `{"aa":[{"name":"Test","addStruct":{"field2":"Field 2"},"child":{"childA":"Child A","childStruct":{"B":567}},"slice":[{"arr1":"Test field slice 1"}]}]}`,
 		},
 		{
 			name:       "Testcase #4, argument is map of object include struct",
 			args:       map[string]*obj{"aa": &objExample},
-			wantResult: `{"aa":{"name":"Test","addStruct":{"field2":"Field 2"},"child":{"childA":"Child A","childStruct":{"B":567}}}}`,
+			wantResult: `{"aa":{"name":"Test","addStruct":{"field2":"Field 2"},"child":{"childA":"Child A","childStruct":{"B":567}},"slice":[{"arr1":"Test field slice 1"}]}}`,
 		},
 		{
 			name:    "Testcase #6 want panic, invalid data type argument",
