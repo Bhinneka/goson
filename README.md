@@ -104,6 +104,11 @@ type Child struct {
 		B int `json:"B"`
 	} `json:"childStruct"`
 }
+// arr type for slice example
+type arr struct {
+	Arr1 string `json:"arr1"`
+	Arr2 string `json:"arr2,omitempty"`
+}
 
 // Bhinnekaners type
 type Bhinnekaners struct {
@@ -113,12 +118,13 @@ type Bhinnekaners struct {
 		Field1 string `json:"field1,omitempty"`
 		Field2 string `json:"field2"`
 	} `json:"addStruct"`
-	AddChildPtr *Child `json:"child,omitempty"`
+	AddChildPtr *Child `json:"child"`
+	Slice       []arr  `json:"slice"`
 }
 
 example := Bhinnekaners{
 	Name:       "Agung DP",
-	Additional: "test lagi",
+	Additional: "testing",
 	AddStruct: struct {
 		Field1 string `json:"field1,omitempty"`
 		Field2 string `json:"field2"`
@@ -135,6 +141,12 @@ example := Bhinnekaners{
 		}{
 			A: 453,
 			B: 567,
+		},
+	},
+	Slice: []arr{
+		arr{
+			Arr1: "Test field slice 1",
+			Arr2: "Test field slice 2",
 		},
 	},
 }
@@ -156,7 +168,13 @@ example := Bhinnekaners{
       "A": 453,
       "B": 567
     }
-  }
+  },
+  "slice": [
+    {
+      "arr1": "Test field slice 1",
+      "arr2": "Test field slice 2"
+    }
+  ]
 }
 ```
 
@@ -172,6 +190,11 @@ example := Bhinnekaners{
     "childStruct": {
       "B": 567
     }
-  }
+  },
+  "slice": [
+    {
+      "arr1": "Test field slice 1"
+    }
+  ]
 }
 ```
