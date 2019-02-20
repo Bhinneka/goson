@@ -4,9 +4,15 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
+	"time"
 )
 
 func makeZeroField(obj reflect.Value) {
+	// ignore if obj type is time
+	if reflect.TypeOf(obj.Interface()) == reflect.TypeOf(time.Time{}) {
+		return
+	}
+
 	for i := 0; i < obj.NumField(); i++ {
 		field := obj.Field(i)
 
