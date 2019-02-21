@@ -1,9 +1,19 @@
 package goson
 
+/*
+	Support deeply nested struct, with time complexity is total fields (include total fields in each slice/map)
+*/
+
 import (
 	"fmt"
 	"reflect"
 	"strings"
+)
+
+var (
+	whiteListType = map[string]bool{
+		"ptr": true, "slice": true, "map": true,
+	}
 )
 
 func makeZeroField(obj reflect.Value) {
@@ -14,14 +24,7 @@ func makeZeroField(obj reflect.Value) {
 		}
 
 		// if field is struct or types (nested struct or slice), process with recursive
-		switch field.Kind() {
-		case reflect.Ptr:
-			processPointer(field)
-		case reflect.Struct:
-			makeZeroField(field)
-		case reflect.Slice:
-			fetchSliceType(field)
-		}
+		processTypeOfValue(field)
 
 		jsonTag := obj.Type().Field(i).Tag.Get("json")
 		jsonTags := strings.Split(jsonTag, ",")
@@ -37,31 +40,35 @@ func processPointer(ptr reflect.Value) {
 		ptr = reflect.ValueOf(&val).Elem()
 		ptr = reflect.New(ptr.Elem().Type().Elem()) // create from new domain model type of field
 	}
-	makeZeroField(ptr.Elem())
+
+	obj := ptr.Elem()
+	processTypeOfValue(obj)
 }
 
 func fetchSliceType(slice reflect.Value) {
 	for i := 0; i < slice.Len(); i++ {
 		obj := slice.Index(i)
-		if obj.Kind() == reflect.Ptr {
-			processPointer(obj)
-		} else {
-			makeZeroField(obj)
-		}
+		processTypeOfValue(obj)
 	}
 }
 
 func fetchMapType(mapper reflect.Value) {
 	for _, idx := range mapper.MapKeys() {
 		obj := mapper.MapIndex(idx)
-		switch obj.Kind() {
-		case reflect.Slice:
-			fetchSliceType(obj)
-		case reflect.Ptr:
-			processPointer(obj)
-		default:
-			makeZeroField(obj)
-		}
+		processTypeOfValue(obj)
+	}
+}
+
+func processTypeOfValue(obj reflect.Value) {
+	switch obj.Kind() {
+	case reflect.Struct:
+		makeZeroField(obj)
+	case reflect.Slice:
+		fetchSliceType(obj)
+	case reflect.Map:
+		fetchMapType(obj)
+	case reflect.Ptr:
+		processPointer(obj)
 	}
 }
 
@@ -74,17 +81,10 @@ func MakeZeroOmitempty(obj interface{}) (err error) {
 	}()
 
 	refValue := reflect.ValueOf(obj)
-
-	switch refValue.Kind() {
-	case reflect.Slice:
-		fetchSliceType(refValue)
-	case reflect.Map:
-		fetchMapType(refValue)
-	case reflect.Ptr:
-		processPointer(refValue)
-	default:
-		err = fmt.Errorf("invalid type %v: accept pointer, slice, and map", refValue.Kind())
+	if ok := whiteListType[refValue.Kind().String()]; !ok {
+		return fmt.Errorf("invalid type %v: accept pointer, slice, and map", refValue.Kind())
 	}
 
+	processTypeOfValue(refValue)
 	return
 }
