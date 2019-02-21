@@ -4,17 +4,14 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
-	"time"
 )
 
 func makeZeroField(obj reflect.Value) {
-	// ignore if obj type is time
-	if reflect.TypeOf(obj.Interface()) == reflect.TypeOf(time.Time{}) {
-		return
-	}
-
 	for i := 0; i < obj.NumField(); i++ {
 		field := obj.Field(i)
+		if !field.CanSet() { // break if field cannot set a value (usually an unexported field in struct), to avoid a panic
+			return
+		}
 
 		// if field is struct or types (nested struct or slice), process with recursive
 		switch field.Kind() {
