@@ -198,3 +198,98 @@ example := Bhinnekaners{
   ]
 }
 ```
+
+
+### Advance JSON Unmarshal
+
+```go
+package main
+
+import (
+	"fmt"
+	"github.com/Bhinneka/goson"
+)
+
+type Slice struct {
+	FieldA int    `json:"fieldA"`
+	FieldB string `json:"fieldB"`
+	Exist  string `json:"exist"`
+}
+type Model struct {
+	ID        int     `json:"id" default:"1"`
+	Name      string  `json:"name"`
+	MustFloat float64 `json:"mustFloat"`
+	MustInt   int     `json:"mustInt"`
+	IsExist   bool    `json:"isExist"`
+	Obj       *struct {
+		N       int `json:"n"`
+		Testing struct {
+			Ss int `json:"ss"`
+		} `json:"testing"`
+	} `json:"obj"`
+	Slice []Slice `json:"slice"`
+}
+
+var data = []byte(`
+{
+	"id": "01",
+	"name": "agungdp",
+	"mustFloat": "2.23423",
+	"mustInt": 2.23423,
+	"isExist": "true",
+	"obj": {
+		"n": 2,
+		"testing": {
+			"ss": "23840923849284"
+		}
+	},
+	"slice": [
+		{
+			"fieldA": "100",
+			"fieldB": "3000",
+			"exist": true
+		},
+		{
+			"fieldA": 50000,
+			"fieldB": "123000"
+		}
+	]
+}
+`)
+
+func main() {
+	var target Model
+	goson.Unmarshal(data, &target)
+	fmt.Printf("%+v\n", target)
+}
+```
+
+<b>Value from target:</b>
+
+```json
+{
+     "id": 1,
+     "name": "agungdp",
+     "mustFloat": 2.23423,
+     "mustInt": 2,
+     "isExist": true,
+     "obj": {
+          "n": 2,
+          "testing": {
+               "ss": 23840923849284
+          }
+     },
+     "slice": [
+          {
+               "fieldA": 100,
+               "fieldB": "3000",
+               "exist": "true"
+          },
+          {
+               "fieldA": 50000,
+               "fieldB": "123000",
+               "exist": ""
+          }
+     ]
+}
+```
