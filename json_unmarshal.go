@@ -10,6 +10,9 @@ import (
 
 var (
 	// check basic data type (integer, float, string, boolean)
+	uintCheck = map[reflect.Kind]bool{
+		reflect.Uint8: true, reflect.Uint16: true, reflect.Uint32: true, reflect.Uint: true, reflect.Uint64: true,
+	}
 	intCheck = map[reflect.Kind]bool{
 		reflect.Int8: true, reflect.Int16: true, reflect.Int32: true, reflect.Int: true, reflect.Int64: true,
 	}
@@ -110,6 +113,10 @@ func setValue(targetField reflect.Value, data interface{}) {
 			if val, err := strconv.Atoi(str); err == nil {
 				targetField.Set(reflect.ValueOf(int(val)))
 			}
+		case uintCheck[targetKind]:
+			if val, err := strconv.Atoi(str); err == nil {
+				targetField.Set(reflect.ValueOf(uint(val)))
+			}
 		case floatCheck[targetKind]:
 			if val, err := strconv.ParseFloat(str, -1); err == nil {
 				value := reflect.ValueOf(val)
@@ -134,7 +141,9 @@ func setValue(targetField reflect.Value, data interface{}) {
 			targetField.Set(valueSource)
 		case intCheck[targetKind]:
 			targetField.Set(reflect.ValueOf(int(fl)))
-		case stringCheck[targetKind], boolCheck[targetKind]:
+		case uintCheck[targetKind]:
+			targetField.Set(reflect.ValueOf(uint(fl)))
+		case stringCheck[targetKind]:
 			targetField.Set(reflect.ValueOf(strconv.FormatFloat(fl, 'f', -1, 64)))
 		case boolCheck[targetKind]:
 			if v, err := strconv.ParseBool(strconv.FormatFloat(fl, 'f', -1, 64)); err == nil {

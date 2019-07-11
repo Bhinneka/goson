@@ -16,6 +16,7 @@ func TestUnmarshal(t *testing.T) {
 		Name      string   `json:"name"`
 		MustFloat *float64 `json:"mustFloat"`
 		MustInt   int      `json:"mustInt"`
+		Uint      uint     `json:"uint"`
 		IsExist   *bool    `json:"isExist"`
 		Obj       *struct {
 			N       int `json:"n"`
@@ -34,6 +35,7 @@ func TestUnmarshal(t *testing.T) {
 				"name": "agungdp",
 				"mustFloat": "2.23423",
 				"mustInt": 2.23423,
+				"uint": 11,
 				"isExist": "true",
 				"obj": {
 				  "n": 2,
