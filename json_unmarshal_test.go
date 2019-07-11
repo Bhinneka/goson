@@ -2,8 +2,6 @@ package goson
 
 import (
 	"testing"
-
-	"github.com/agungdwiprasetyo/go-utils/debug"
 )
 
 func TestUnmarshal(t *testing.T) {
@@ -80,6 +78,5 @@ func TestUnmarshal(t *testing.T) {
 
 		// fmt.Println("==================================================================")
 		// fmt.Printf("\n%+v\n\n", target)
-		debug.PrintJSON(target)
 	})
 }
