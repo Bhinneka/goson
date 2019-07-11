@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	// check basic type data (integer, float, string, boolean)
+	// check basic data type (integer, float, string, boolean)
 	intCheck = map[reflect.Kind]bool{
 		reflect.Int8: true, reflect.Int16: true, reflect.Int32: true, reflect.Int: true, reflect.Int64: true,
 	}
@@ -53,16 +53,11 @@ func fetchDataType(obj reflect.Value, source map[string]interface{}) {
 		scan(obj, source)
 
 	case reflect.Ptr:
-		if obj.IsNil() {
-			val := obj.Interface()
-			rv := reflect.ValueOf(val)
-			val = reflect.New(rv.Type().Elem()).Interface()
-			obj.Set(reflect.ValueOf(val))
-		}
 		fetchDataType(obj.Elem(), source)
 	}
 }
 
+// scan only if data type is struct
 func scan(obj reflect.Value, data map[string]interface{}) {
 	objType := obj.Type()
 	for i := 0; i < obj.NumField(); i++ {
@@ -86,63 +81,86 @@ func scan(obj reflect.Value, data map[string]interface{}) {
 }
 
 func setValue(targetField reflect.Value, data interface{}) {
-	if data == nil || !targetField.IsValid() {
+	if !targetField.IsValid() {
 		return
 	}
 
 	targetKind := targetField.Kind()     // targetKind is datatype from target
 	valueSource := reflect.ValueOf(data) // valueSource is datatype from json source
 
+	// check target is pointer or not, and value from json data source
+	if targetKind == reflect.Ptr {
+		if data != nil && targetField.IsNil() {
+			rv := reflect.ValueOf(targetField.Interface())
+			val := reflect.New(rv.Type().Elem()).Interface()
+			targetField.Set(reflect.ValueOf(val))
+		}
+		targetField = targetField.Elem() // take the element if target is pointer, to set a value in target
+		targetKind = targetField.Kind()
+	}
+
 	// switch datatype from json source
 	switch valueSource.Kind() {
-	case reflect.String:
+	case reflect.String: // field from json source is string
 		str := valueSource.Interface().(string)
-		if stringCheck[targetKind] {
+		switch {
+		case stringCheck[targetKind]:
 			targetField.Set(valueSource)
-		} else if intCheck[targetKind] {
+		case intCheck[targetKind]:
 			if val, err := strconv.Atoi(str); err == nil {
 				targetField.Set(reflect.ValueOf(int(val)))
 			}
-		} else if floatCheck[targetKind] {
+		case floatCheck[targetKind]:
 			if val, err := strconv.ParseFloat(str, -1); err == nil {
-				targetField.Set(reflect.ValueOf(val))
+				value := reflect.ValueOf(val)
+				if targetKind == reflect.Float32 {
+					value = reflect.ValueOf(float32(val))
+				}
+				targetField.Set(value)
 			}
-		} else if boolCheck[targetKind] {
+		case boolCheck[targetKind]:
 			if val, err := strconv.ParseBool(str); err == nil {
 				targetField.Set(reflect.ValueOf(val))
 			}
 		}
 
-	case reflect.Float64:
+	case reflect.Float64: // field from json source is float, and integer (because integer in json source will be made to Float64 when Unmarshal)
 		fl := valueSource.Interface().(float64)
-		if floatCheck[targetKind] {
+		switch {
+		case floatCheck[targetKind]:
+			if targetKind == reflect.Float32 {
+				valueSource = reflect.ValueOf(float32(fl))
+			}
 			targetField.Set(valueSource)
-		} else if intCheck[targetKind] {
+		case intCheck[targetKind]:
 			targetField.Set(reflect.ValueOf(int(fl)))
-		} else if stringCheck[targetKind] {
+		case stringCheck[targetKind], boolCheck[targetKind]:
 			targetField.Set(reflect.ValueOf(strconv.FormatFloat(fl, 'f', -1, 64)))
+		case boolCheck[targetKind]:
+			if v, err := strconv.ParseBool(strconv.FormatFloat(fl, 'f', -1, 64)); err == nil {
+				targetField.Set(reflect.ValueOf(v))
+			}
 		}
 
-	case reflect.Bool:
-		if boolCheck[targetKind] {
+	case reflect.Bool: // field from json source is boolean
+		switch {
+		case boolCheck[targetKind]:
 			targetField.Set(valueSource)
-		} else if stringCheck[targetKind] {
+		case stringCheck[targetKind]:
 			bl := valueSource.Interface().(bool)
 			targetField.Set(reflect.ValueOf(strconv.FormatBool(bl)))
 		}
 
-	case reflect.Map: // representation from struct
+	case reflect.Map: // representation from struct, process with recursive again
 		subData := valueSource.Interface().(map[string]interface{})
 		fetchDataType(targetField, subData)
 
-	case reflect.Slice:
+	case reflect.Slice: // representation from array, process with recursive again
 		if targetKind == reflect.Slice {
 			data := valueSource.Interface().([]interface{})
 			tmpSlice := reflect.MakeSlice(reflect.SliceOf(reflect.TypeOf(targetField.Interface()).Elem()), len(data), len(data))
 			for i := 0; i < tmpSlice.Len(); i++ {
-				subData := data[i].(map[string]interface{})
-				obj := tmpSlice.Index(i)
-				fetchDataType(obj, subData)
+				setValue(tmpSlice.Index(i), data[i])
 			}
 			targetField.Set(tmpSlice)
 		}
