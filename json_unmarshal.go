@@ -11,10 +11,10 @@ import (
 var (
 	// check basic data type (integer, float, string, boolean)
 	uintCheck = map[reflect.Kind]bool{
-		reflect.Uint8: true, reflect.Uint16: true, reflect.Uint32: true, reflect.Uint: true, reflect.Uint64: true,
+		reflect.Uint: true, reflect.Uint8: true, reflect.Uint16: true, reflect.Uint32: true, reflect.Uint64: true,
 	}
 	intCheck = map[reflect.Kind]bool{
-		reflect.Int8: true, reflect.Int16: true, reflect.Int32: true, reflect.Int: true, reflect.Int64: true,
+		reflect.Int: true, reflect.Int8: true, reflect.Int16: true, reflect.Int32: true, reflect.Int64: true,
 	}
 	floatCheck = map[reflect.Kind]bool{
 		reflect.Float32: true, reflect.Float64: true,
@@ -35,33 +35,46 @@ func Unmarshal(data []byte, target interface{}) (err error) {
 		}
 	}()
 
-	refValue := reflect.ValueOf(target)
-	if ok := whiteListType[refValue.Kind().String()]; !ok {
-		return fmt.Errorf("invalid target type %v: accept pointer, slice, and map", refValue.Kind())
+	targetValue := reflect.ValueOf(target)
+	if targetValue.Kind() != reflect.Ptr {
+		return fmt.Errorf("invalid target type %v: must pass memory address from target", targetValue.Kind())
 	}
 
-	var tmp map[string]interface{}
-	err = json.Unmarshal(data, &tmp)
+	var dataSource interface{}
+	err = json.Unmarshal(data, &dataSource)
 	if err != nil {
 		return err
 	}
 
-	fetchDataType(refValue, tmp)
+	scanTarget(targetValue, dataSource)
 	return
 }
 
-func fetchDataType(obj reflect.Value, source map[string]interface{}) {
-	switch obj.Kind() {
+// scanTarget from destination data for target type is non basic data type (int, float, string, bool)
+func scanTarget(target reflect.Value, source interface{}) {
+	switch target.Kind() {
 	case reflect.Struct:
-		scan(obj, source)
+		data, _ := source.(map[string]interface{}) // if target is struct, source type must be map[string]interface{}
+		scanStructField(target, data)
+
+	case reflect.Slice:
+		sourceVal := reflect.ValueOf(source)
+		if sourceVal.Kind() == reflect.Slice {
+			tmpSlice := reflect.MakeSlice(reflect.SliceOf(reflect.TypeOf(target.Interface()).Elem()), sourceVal.Len(), sourceVal.Len())
+			for i := 0; i < tmpSlice.Len(); i++ {
+				setValue(tmpSlice.Index(i), sourceVal.Index(i).Interface())
+			}
+			target.Set(tmpSlice)
+		}
 
 	case reflect.Ptr:
-		fetchDataType(obj.Elem(), source)
+		scanTarget(target.Elem(), source)
+
 	}
 }
 
 // scan only if data type is struct
-func scan(obj reflect.Value, data map[string]interface{}) {
+func scanStructField(obj reflect.Value, data map[string]interface{}) {
 	objType := obj.Type()
 	for i := 0; i < obj.NumField(); i++ {
 		field := obj.Field(i)
@@ -69,17 +82,18 @@ func scan(obj reflect.Value, data map[string]interface{}) {
 			return
 		}
 
-		fetchDataType(field, data)
-
 		jsonTag := objType.Field(i).Tag.Get("json")
-		if jsonTags := strings.Split(jsonTag, ","); len(jsonTags) > 0 {
+		if jsonTags := strings.Split(jsonTag, ","); len(jsonTags) > 0 { // if json tag contains "omitempty"
 			jsonTag = jsonTags[0]
 		}
 		if jsonTag == "" {
 			jsonTag = objType.Field(i).Name
 		}
 
-		setValue(field, data[jsonTag])
+		source := data[jsonTag]
+		scanTarget(field, source)
+
+		setValue(field, source)
 	}
 }
 
@@ -93,7 +107,7 @@ func setValue(targetField reflect.Value, data interface{}) {
 
 	// check target is pointer or not, and value from json data source
 	if targetKind == reflect.Ptr {
-		if data != nil && targetField.IsNil() {
+		if data != nil && targetField.IsNil() { // allocate new value to pointer target
 			rv := reflect.ValueOf(targetField.Interface())
 			val := reflect.New(rv.Type().Elem()).Interface()
 			targetField.Set(reflect.ValueOf(val))
@@ -108,70 +122,54 @@ func setValue(targetField reflect.Value, data interface{}) {
 		str := valueSource.Interface().(string)
 		switch {
 		case stringCheck[targetKind]:
-			targetField.Set(valueSource)
+			targetField.SetString(str)
 		case intCheck[targetKind]:
 			if val, err := strconv.Atoi(str); err == nil {
-				targetField.Set(reflect.ValueOf(int(val)))
+				targetField.SetInt(int64(val))
 			}
 		case uintCheck[targetKind]:
 			if val, err := strconv.Atoi(str); err == nil {
-				targetField.Set(reflect.ValueOf(uint(val)))
+				targetField.SetUint(uint64(val))
 			}
 		case floatCheck[targetKind]:
 			if val, err := strconv.ParseFloat(str, -1); err == nil {
-				value := reflect.ValueOf(val)
-				if targetKind == reflect.Float32 {
-					value = reflect.ValueOf(float32(val))
-				}
-				targetField.Set(value)
+				targetField.SetFloat(val)
 			}
 		case boolCheck[targetKind]:
 			if val, err := strconv.ParseBool(str); err == nil {
-				targetField.Set(reflect.ValueOf(val))
+				targetField.SetBool(val)
 			}
 		}
 
-	case reflect.Float64: // field from json source is float, and integer (because integer in json source will be made to Float64 when Unmarshal)
+	case reflect.Float64: // field from json source is float, and integer (because any integer in json source will be made to Float64 when Unmarshal)
 		fl := valueSource.Interface().(float64)
 		switch {
 		case floatCheck[targetKind]:
-			if targetKind == reflect.Float32 {
-				valueSource = reflect.ValueOf(float32(fl))
-			}
-			targetField.Set(valueSource)
+			targetField.SetFloat(fl)
 		case intCheck[targetKind]:
-			targetField.Set(reflect.ValueOf(int(fl)))
+			targetField.SetInt(int64(fl))
 		case uintCheck[targetKind]:
-			targetField.Set(reflect.ValueOf(uint(fl)))
+			targetField.SetUint(uint64(fl))
 		case stringCheck[targetKind]:
-			targetField.Set(reflect.ValueOf(strconv.FormatFloat(fl, 'f', -1, 64)))
+			targetField.SetString(strconv.FormatFloat(fl, 'f', -1, 64))
 		case boolCheck[targetKind]:
 			if v, err := strconv.ParseBool(strconv.FormatFloat(fl, 'f', -1, 64)); err == nil {
-				targetField.Set(reflect.ValueOf(v))
+				targetField.SetBool(v)
 			}
 		}
 
 	case reflect.Bool: // field from json source is boolean
+		bl := valueSource.Interface().(bool)
 		switch {
 		case boolCheck[targetKind]:
-			targetField.Set(valueSource)
+			targetField.SetBool(bl)
 		case stringCheck[targetKind]:
-			bl := valueSource.Interface().(bool)
-			targetField.Set(reflect.ValueOf(strconv.FormatBool(bl)))
+			targetField.SetString(strconv.FormatBool(bl))
 		}
 
 	case reflect.Map: // representation from struct, process with recursive again
-		subData := valueSource.Interface().(map[string]interface{})
-		fetchDataType(targetField, subData)
+		subData, _ := valueSource.Interface().(map[string]interface{})
+		scanTarget(targetField, subData)
 
-	case reflect.Slice: // representation from array, process with recursive again
-		if targetKind == reflect.Slice {
-			data := valueSource.Interface().([]interface{})
-			tmpSlice := reflect.MakeSlice(reflect.SliceOf(reflect.TypeOf(targetField.Interface()).Elem()), len(data), len(data))
-			for i := 0; i < tmpSlice.Len(); i++ {
-				setValue(tmpSlice.Index(i), data[i])
-			}
-			targetField.Set(tmpSlice)
-		}
 	}
 }
