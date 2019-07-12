@@ -37,7 +37,7 @@ func Unmarshal(data []byte, target interface{}) (err error) {
 
 	targetValue := reflect.ValueOf(target)
 	if targetValue.Kind() != reflect.Ptr {
-		return fmt.Errorf("invalid target type %v: must pass memory address from target", targetValue.Kind())
+		return fmt.Errorf("invalid target type %v: must pass address from target", targetValue.Kind())
 	}
 
 	var dataSource interface{}
@@ -167,9 +167,8 @@ func setValue(targetField reflect.Value, data interface{}) {
 			targetField.SetString(strconv.FormatBool(bl))
 		}
 
-	case reflect.Map: // representation from struct, process with recursive again
-		subData, _ := valueSource.Interface().(map[string]interface{})
-		scanTarget(targetField, subData)
+	case reflect.Map, reflect.Slice: // representation from subtree in json source, process with recursive again
+		scanTarget(targetField, data)
 
 	}
 }

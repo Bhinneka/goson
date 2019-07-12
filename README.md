@@ -216,7 +216,7 @@ type Slice struct {
 	Exist  string `json:"exist"`
 }
 type Model struct {
-	ID        int     `json:"id" default:"1"`
+	ID        int     `json:"id"`
 	Name      string  `json:"name"`
 	MustFloat float64 `json:"mustFloat"`
 	MustInt   int     `json:"mustInt"`

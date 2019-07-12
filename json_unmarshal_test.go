@@ -13,7 +13,7 @@ func TestUnmarshal(t *testing.T) {
 		Test   float32 `json:"test"`
 	}
 	type Model struct {
-		ID        int      `json:"id" default:"1"`
+		ID        int      `json:"id"`
 		Name      string   `json:"name"`
 		MustFloat *float64 `json:"mustFloat"`
 		MustInt   int      `json:"mustInt"`
@@ -29,6 +29,8 @@ func TestUnmarshal(t *testing.T) {
 		Strings []*string `json:"str"`
 		Ints    []int     `json:"ints"`
 		Bools   []bool    `json:"bools"`
+		NoTag   string
+		skip    string // cannot set value to this field because unexported
 	}
 
 	t.Run("Testcase #1: Testing Unmarshal with root is JSON Object", func(t *testing.T) {
@@ -61,7 +63,8 @@ func TestUnmarshal(t *testing.T) {
 				],
 				"str": ["a", true],
 				"ints": ["2", 3],
-				"bools": [1, "true", "0", true]
+				"bools": [1, "true", "0", true],
+				"NoTag": 19283091832
 			  }`)
 		var target Model
 		if err := Unmarshal(data, &target); err != nil {
@@ -86,6 +89,9 @@ func TestUnmarshal(t *testing.T) {
 			t.Errorf("value not equal")
 		}
 		if target.Bools[2] != false {
+			t.Errorf("value not equal")
+		}
+		if target.NoTag != "19283091832" {
 			t.Errorf("value not equal")
 		}
 
@@ -119,5 +125,23 @@ func TestUnmarshal(t *testing.T) {
 		}
 
 		fmt.Printf("%+v\n\n", target)
+	})
+
+	t.Run("Testcase #3: Testing error unmarshal (target is not pointer)", func(t *testing.T) {
+		data := []byte(`{}`)
+		var target Model
+		err := Unmarshal(data, target)
+		if err == nil {
+			t.Errorf("Unmarshal() must error, got nil")
+		}
+	})
+
+	t.Run("Testcase #4: Testing error unmarshal (invalid json format)", func(t *testing.T) {
+		data := []byte(`{1: satu}`)
+		var target Model
+		err := Unmarshal(data, &target)
+		if err == nil {
+			t.Errorf("Unmarshal() must error, got nil")
+		}
 	})
 }
