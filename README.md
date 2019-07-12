@@ -2,6 +2,8 @@
 
 [![GoDoc](https://godoc.org/github.com/Bhinneka/goson?status.svg)](https://godoc.org/github.com/Bhinneka/goson)
 [![Go Report Card](https://goreportcard.com/badge/github.com/Bhinneka/goson)](https://goreportcard.com/report/github.com/Bhinneka/goson)
+[![codecov](https://codecov.io/gh/Bhinneka/goson/branch/master/graph/badge.svg)]
+(https://codecov.io/gh/Bhinneka/goson)
 
 #### Install
 ```shell
