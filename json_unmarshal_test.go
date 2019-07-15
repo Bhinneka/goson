@@ -3,6 +3,8 @@ package goson
 import (
 	"fmt"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestUnmarshal(t *testing.T) {
@@ -67,33 +69,17 @@ func TestUnmarshal(t *testing.T) {
 				"NoTag": 19283091832
 			  }`)
 		var target Model
-		if err := Unmarshal(data, &target); err != nil {
-			t.Errorf("Unmarshal() error = %v", err)
-		}
-		if target.MustFloat == nil {
-			t.Errorf("field should not nil")
-		}
-		if target.Uint != 11 {
-			t.Errorf("field should not nil")
-		}
-		if target.Obj.Testing.Ss != 23840923849284 {
-			t.Errorf("value not equal")
-		}
-		if target.Slice[0].Exist != "true" {
-			t.Errorf("value not equal")
-		}
-		if *target.Strings[1] != "true" {
-			t.Errorf("value not equal")
-		}
-		if target.Ints[0] != 2 {
-			t.Errorf("value not equal")
-		}
-		if target.Bools[2] != false {
-			t.Errorf("value not equal")
-		}
-		if target.NoTag != "19283091832" {
-			t.Errorf("value not equal")
-		}
+		err := Unmarshal(data, &target)
+		assert.NoError(t, err)
+
+		assert.NotNil(t, target.MustFloat)
+		assert.Equal(t, uint(11), target.Uint)
+		assert.Equal(t, 23840923849284, target.Obj.Testing.Ss)
+		assert.Equal(t, "true", target.Slice[0].Exist)
+		assert.Equal(t, "true", *target.Strings[1])
+		assert.Equal(t, 2, target.Ints[0])
+		assert.Equal(t, false, target.Bools[2])
+		assert.Equal(t, "19283091832", target.NoTag)
 
 		fmt.Printf("%+v\n\n", target)
 	})
@@ -114,15 +100,11 @@ func TestUnmarshal(t *testing.T) {
 			}
 	   ]`)
 		var target []Slice
-		if err := Unmarshal(data, &target); err != nil {
-			t.Errorf("Unmarshal() error = %v", err)
-		}
-		if target == nil {
-			t.Errorf("field should not nil")
-		}
-		if len(target) != 2 {
-			t.Errorf("not equal")
-		}
+		err := Unmarshal(data, &target)
+		assert.NoError(t, err)
+
+		assert.NotNil(t, target)
+		assert.Len(t, target, 2)
 
 		fmt.Printf("%+v\n\n", target)
 	})
@@ -131,17 +113,13 @@ func TestUnmarshal(t *testing.T) {
 		data := []byte(`{}`)
 		var target Model
 		err := Unmarshal(data, target)
-		if err == nil {
-			t.Errorf("Unmarshal() must error, got nil")
-		}
+		assert.Error(t, err)
 	})
 
 	t.Run("Testcase #4: Testing error unmarshal (invalid json format)", func(t *testing.T) {
 		data := []byte(`{1: satu}`)
 		var target Model
 		err := Unmarshal(data, &target)
-		if err == nil {
-			t.Errorf("Unmarshal() must error, got nil")
-		}
+		assert.Error(t, err)
 	})
 }

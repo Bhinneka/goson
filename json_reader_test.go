@@ -58,7 +58,7 @@ func Test_Reader(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, i, 1)
 
-		i, err = reader.GetField("obj", "testing", "ssa").Int()
+		i, err = reader.GetField("name").Int()
 		assert.Error(t, err)
 	})
 
@@ -67,8 +67,9 @@ func Test_Reader(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, fl, 3.14)
 
-		fl, err = reader.GetField("slice", "[0]", "a").Float()
-		assert.Error(t, err)
+		fl, err = reader.GetField("str", "[1]").Float()
+		assert.NoError(t, err)
+		assert.Equal(t, float64(1), fl)
 	})
 
 	t.Run("Testcase #4: Get uint field", func(t *testing.T) {
@@ -76,8 +77,8 @@ func Test_Reader(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, u, uint(11))
 
-		u, err = reader.GetField("slice", "a", "b").Uint()
-		assert.Error(t, err)
+		u, err = reader.GetField("str", "[1]").Uint()
+		assert.NoError(t, err)
 	})
 
 	t.Run("Testcase #5: Get bool field", func(t *testing.T) {
@@ -85,7 +86,7 @@ func Test_Reader(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, b, true)
 
-		b, err = reader.GetField("slice", "a", "b").Bool()
+		b, err = reader.GetField("obj", "a", "b").Bool()
 		assert.Error(t, err)
 	})
 
@@ -99,6 +100,11 @@ func Test_Reader(t *testing.T) {
 		assert.Equal(t, m.SS, "23840923849284")
 
 		err = reader.GetField("slice", "a", "b").SetTo(&m)
+		assert.Error(t, err)
+	})
+
+	t.Run("Testcase #6: Invalid JSON format", func(t *testing.T) {
+		_, err := Read([]byte(`{a:3}`))
 		assert.Error(t, err)
 	})
 }
