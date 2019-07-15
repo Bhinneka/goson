@@ -12,7 +12,7 @@ $ go get github.com/Bhinneka/goson
 #### Todo
 - Add more utility
 
-### Hide specific fields
+## Hide specific fields
 ```go
 package main
 
@@ -93,7 +93,7 @@ func main() {
 }
 ```
 
-### Make Zero Omitempty
+## Make Zero Omitempty
 
 ```go
 // Child type
@@ -201,7 +201,7 @@ example := Bhinnekaners{
 ```
 
 
-### Advance JSON Unmarshal
+## Advance JSON Unmarshal
 
 ```go
 package main
@@ -292,5 +292,85 @@ func main() {
                "exist": ""
           }
      ]
+}
+```
+
+## JSON Reader
+
+```go
+package main
+
+import (
+	"fmt"
+	"github.com/Bhinneka/goson"
+)
+
+var data = []byte(`
+{
+	"id": "0101",
+	"name": "agungdp",
+	"mustFloat": "2.23423",
+	"mustInt": 2.23423,
+	"uint": 11,
+	"isExist": "true",
+	"obj": {
+		"n": 2,
+		"testing": {
+			"ss": "23840923849284"
+		}
+	},
+	"slice": [
+		{
+			"fieldA": "100",
+			"fieldB": 3000,
+			"exist": true,
+			"test": "3.14"
+		},
+		{
+			"fieldA": 50000,
+			"fieldB": "123000",
+			"exist": 3000,
+			"test": 1323.123
+		}
+	],
+	"str": ["a", true],
+	"ints": ["2", 3],
+	"bools": [1, "true", "0", true],
+	"NoTag": 19283091832
+}
+`)
+
+func main() {
+	reader, err := goson.Read(data)
+	if err != nil {
+		panic(err)
+	}
+
+	// get string field
+	str, _ := reader.GetField("slice", "[1]", "fieldA").String()
+	fmt.Printf("%s\n", str) // "50000"
+
+	// get int field
+	i, _ := reader.GetField("obj", "testing", "ss").Int()
+	fmt.Printf("%d\n", i) // 23840923849284
+
+	// get uint field
+	u, _ := reader.GetField("uint").Uint()
+	fmt.Printf("%d\n", u) // 11
+
+	// get float field
+	fl, _ := reader.GetField("slice", "[0]", "test").Float()
+	fmt.Printf("%f\n", fl) // 3.14
+
+	// get bool field
+	b, _ := reader.GetField("isExist").Bool()
+	fmt.Printf("%v\n", b) // true
+
+	// get sub-json field (support object & array field)
+	var m struct {
+		SS string `json:"ss"`
+	}
+	reader.GetField("obj", "testing").SetTo(&m)
+	fmt.Printf("%+v\n", m) // {SS: 23840923849284}
 }
 ```

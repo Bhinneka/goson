@@ -26,8 +26,9 @@ func TestMakeZeroOmitempty(t *testing.T) {
 			Field1 string `json:"field1,omitempty"`
 			Field2 string `json:"field2"`
 		} `json:"addStruct"`
-		AddChildPtr *Child `json:"child"`
-		Slice       []arr  `json:"slice"`
+		AddChildPtr *Child  `json:"child"`
+		Slice       []arr   `json:"slice"`
+		Nullable    *string `json:"nullable,omitempty"`
 	}
 
 	/*

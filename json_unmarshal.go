@@ -2,29 +2,10 @@ package goson
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"reflect"
-	"strconv"
 	"strings"
-)
-
-var (
-	// check basic data type (integer, float, string, boolean)
-	uintCheck = map[reflect.Kind]bool{
-		reflect.Uint: true, reflect.Uint8: true, reflect.Uint16: true, reflect.Uint32: true, reflect.Uint64: true,
-	}
-	intCheck = map[reflect.Kind]bool{
-		reflect.Int: true, reflect.Int8: true, reflect.Int16: true, reflect.Int32: true, reflect.Int64: true,
-	}
-	floatCheck = map[reflect.Kind]bool{
-		reflect.Float32: true, reflect.Float64: true,
-	}
-	stringCheck = map[reflect.Kind]bool{
-		reflect.String: true,
-	}
-	boolCheck = map[reflect.Kind]bool{
-		reflect.Bool: true,
-	}
 )
 
 // Unmarshal json string, avoid error if incompatible data type
@@ -97,9 +78,9 @@ func scanStructField(obj reflect.Value, data map[string]interface{}) {
 	}
 }
 
-func setValue(targetField reflect.Value, data interface{}) {
+func setValue(targetField reflect.Value, data interface{}) (err error) {
 	if !targetField.IsValid() {
-		return
+		return errors.New("cannot set value to target")
 	}
 
 	targetKind := targetField.Kind()     // targetKind is datatype from target
@@ -119,56 +100,20 @@ func setValue(targetField reflect.Value, data interface{}) {
 	// switch datatype from json source
 	switch valueSource.Kind() {
 	case reflect.String: // field from json source is string
-		str := valueSource.Interface().(string)
-		switch {
-		case stringCheck[targetKind]:
-			targetField.SetString(str)
-		case intCheck[targetKind]:
-			if val, err := strconv.Atoi(str); err == nil {
-				targetField.SetInt(int64(val))
-			}
-		case uintCheck[targetKind]:
-			if val, err := strconv.Atoi(str); err == nil {
-				targetField.SetUint(uint64(val))
-			}
-		case floatCheck[targetKind]:
-			if val, err := strconv.ParseFloat(str, -1); err == nil {
-				targetField.SetFloat(val)
-			}
-		case boolCheck[targetKind]:
-			if val, err := strconv.ParseBool(str); err == nil {
-				targetField.SetBool(val)
-			}
-		}
+		str := data.(string)
+		err = parseFromString(targetField, str)
 
 	case reflect.Float64: // field from json source is float, and integer (because any integer in json source will be made to Float64 when Unmarshal)
-		fl := valueSource.Interface().(float64)
-		switch {
-		case floatCheck[targetKind]:
-			targetField.SetFloat(fl)
-		case intCheck[targetKind]:
-			targetField.SetInt(int64(fl))
-		case uintCheck[targetKind]:
-			targetField.SetUint(uint64(fl))
-		case stringCheck[targetKind]:
-			targetField.SetString(strconv.FormatFloat(fl, 'f', -1, 64))
-		case boolCheck[targetKind]:
-			if v, err := strconv.ParseBool(strconv.FormatFloat(fl, 'f', -1, 64)); err == nil {
-				targetField.SetBool(v)
-			}
-		}
+		fl := data.(float64)
+		err = parseFromFloat(targetField, fl)
 
 	case reflect.Bool: // field from json source is boolean
-		bl := valueSource.Interface().(bool)
-		switch {
-		case boolCheck[targetKind]:
-			targetField.SetBool(bl)
-		case stringCheck[targetKind]:
-			targetField.SetString(strconv.FormatBool(bl))
-		}
+		bl := data.(bool)
+		err = parseFromBool(targetField, bl)
 
 	case reflect.Map, reflect.Slice: // representation from subtree in json source, process with recursive again
 		scanTarget(targetField, data)
 
 	}
+	return
 }
