@@ -19,7 +19,8 @@ func Test_Reader(t *testing.T) {
 		  "n": 2,
 		  "testing": {
 			"ss": "23840923849284"
-		  }
+		  },
+		  "s": "Hitomi"
 		},
 		"slice": [
 		  {
@@ -106,5 +107,10 @@ func Test_Reader(t *testing.T) {
 	t.Run("Testcase #6: Invalid JSON format", func(t *testing.T) {
 		_, err := Read([]byte(`{a:3}`))
 		assert.Error(t, err)
+	})
+
+	t.Run("Testcase #7: GetString Reader", func(t *testing.T) {
+		b := reader.GetString("obj.s")
+		assert.Equal(t, "Hitomi", b)
 	})
 }

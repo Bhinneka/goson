@@ -12,11 +12,13 @@ var (
 	arrayCheck = map[byte]byte{
 		'[': ']',
 	}
+	separatorDefault = "."
 )
 
 // Reader json string
 type Reader interface {
 	GetField(keys ...string) Field
+	GetString(keys string) string
 }
 
 // Field from json reader
@@ -43,7 +45,8 @@ func Read(data []byte) (Reader, error) {
 }
 
 type reader struct {
-	data interface{}
+	data      interface{}
+	separator string
 }
 
 func (r *reader) GetField(keys ...string) Field {
@@ -74,6 +77,19 @@ func (r *reader) GetField(keys ...string) Field {
 
 	field.value = data
 	return field
+}
+
+func (r *reader) GetString(key string) string {
+	sep := separatorDefault
+	if r.separator != "" {
+		sep = r.separator // Ini gw kepikiran buat bikin methid set separator, apa mau ambil di get Int aja ya
+	}
+	keyArr := strings.Split(key, sep)
+	str, err := r.GetField(keyArr...).String()
+	if err != nil {
+		return ""
+	}
+	return str
 }
 
 type field struct {

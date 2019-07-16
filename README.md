@@ -317,7 +317,8 @@ var data = []byte(`
 		"n": 2,
 		"testing": {
 			"ss": "23840923849284"
-		}
+        },
+        "s":"Hitomi"
 	},
 	"slice": [
 		{
@@ -371,6 +372,9 @@ func main() {
 		SS string `json:"ss"`
 	}
 	reader.GetField("obj", "testing").SetTo(&m)
-	fmt.Printf("%+v\n", m) // {SS: 23840923849284}
+    fmt.Printf("%+v\n", m) // {SS: 23840923849284}
+    
+    b := reader.GetString("obj.s")
+    fmt.Printf("%v\n", b) // Hitomi
 }
 ```
