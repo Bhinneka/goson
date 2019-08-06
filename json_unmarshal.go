@@ -51,6 +51,9 @@ func scanTarget(target reflect.Value, source interface{}) {
 	case reflect.Ptr:
 		scanTarget(target.Elem(), source)
 
+	case reflect.Interface:
+		target.Set(reflect.ValueOf(source))
+
 	}
 }
 
