@@ -51,9 +51,6 @@ func scanTarget(target reflect.Value, source interface{}) {
 	case reflect.Ptr:
 		scanTarget(target.Elem(), source)
 
-	case reflect.Interface:
-		target.Set(reflect.ValueOf(source))
-
 	}
 }
 
@@ -63,7 +60,7 @@ func scanStructField(obj reflect.Value, data map[string]interface{}) {
 	for i := 0; i < obj.NumField(); i++ {
 		field := obj.Field(i)
 		if !field.CanSet() { // break if field cannot set a value (usually an unexported field in struct), to avoid a panic
-			return
+			continue
 		}
 
 		jsonTag := objType.Field(i).Tag.Get("json")
@@ -90,7 +87,8 @@ func setValue(targetField reflect.Value, data interface{}) (err error) {
 	valueSource := reflect.ValueOf(data) // valueSource is datatype from json source
 
 	// check target is pointer or not, and value from json data source
-	if targetKind == reflect.Ptr {
+	switch targetKind {
+	case reflect.Ptr:
 		if data != nil && targetField.IsNil() { // allocate new value to pointer target
 			rv := reflect.ValueOf(targetField.Interface())
 			val := reflect.New(rv.Type().Elem()).Interface()
@@ -98,6 +96,8 @@ func setValue(targetField reflect.Value, data interface{}) (err error) {
 		}
 		targetField = targetField.Elem() // take the element if target is pointer, to set a value in target
 		targetKind = targetField.Kind()
+	case reflect.Interface:
+		targetField.Set(reflect.ValueOf(data))
 	}
 
 	// switch datatype from json source

@@ -27,12 +27,13 @@ func TestUnmarshal(t *testing.T) {
 				Ss int `json:"ss"`
 			} `json:"testing"`
 		} `json:"obj"`
-		Slice   []Slice   `json:"slice"`
-		Strings []*string `json:"str"`
-		Ints    []int     `json:"ints"`
-		Bools   []bool    `json:"bools"`
-		NoTag   string
-		skip    string // cannot set value to this field because unexported
+		Slice     []Slice   `json:"slice"`
+		Strings   []*string `json:"str"`
+		Ints      []int     `json:"ints"`
+		Bools     []bool    `json:"bools"`
+		NoTag     string
+		skip      string      // cannot set value to this field because unexported
+		Interface interface{} `json:"interface"`
 	}
 
 	t.Run("Testcase #1: Testing Unmarshal with root is JSON Object", func(t *testing.T) {
@@ -66,7 +67,8 @@ func TestUnmarshal(t *testing.T) {
 				"str": ["a", true],
 				"ints": ["2", 3],
 				"bools": [1, "true", "0", true],
-				"NoTag": 19283091832
+				"NoTag": 19283091832,
+				"interface": 1
 			  }`)
 		var target Model
 		err := Unmarshal(data, &target)
@@ -80,6 +82,7 @@ func TestUnmarshal(t *testing.T) {
 		assert.Equal(t, 2, target.Ints[0])
 		assert.Equal(t, false, target.Bools[2])
 		assert.Equal(t, "19283091832", target.NoTag)
+		assert.NotNil(t, target.Interface)
 
 		fmt.Printf("%+v\n\n", target)
 	})
