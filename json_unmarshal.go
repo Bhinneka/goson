@@ -97,7 +97,9 @@ func setValue(targetField reflect.Value, data interface{}) (err error) {
 		targetField = targetField.Elem() // take the element if target is pointer, to set a value in target
 		targetKind = targetField.Kind()
 	case reflect.Interface:
-		targetField.Set(reflect.ValueOf(data))
+		if data != nil {
+			targetField.Set(reflect.ValueOf(data))
+		}
 	}
 
 	// switch datatype from json source
